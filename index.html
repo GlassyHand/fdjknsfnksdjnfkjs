@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Museum Travel - Interactive Video</title>
+    <style>
+        @font-face {
+    font-family: 'BookkMyungjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Lt.woff2') format('woff2');
+    font-weight: 400;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'BookkMyungjo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2302@1.0/BookkMyungjo-Bd.woff2') format('woff2');
+    font-weight: 700;
+    font-display: swap;
+}
+        * {margin: 0;
+            padding: 0; }
+
+        body {overflow: hidden;
+        font-family: BookkMyungjo;
+        font-weight: 400;}
+
+        #video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+        }
+
+        #video-player {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .clickable-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 5;
+            cursor: pointer;
+        }
+
+        /* 제목 영역 */
+        #title-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #000;
+            border-bottom: 2px solid #000;
+            border-radius: 0;
+            padding: 8px 30px;
+            z-index: 30;
+            text-align: center;
+        }
+
+        #title-bar h1 {
+            color: #fff;
+            font-size: 20px;
+            font-weight: 700;
+            font-family: BookkMyungjo;
+            margin: 0;
+        }
+
+        /* 맵 버튼 */
+        #map-button {
+            position: fixed;
+            top: 80px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            color: #000;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-family: BookkMyungjo;
+            z-index: 15;
+        }
+
+        #map-button:hover {
+            background: #f0f0f0;
+        }
+
+        #map-button:active {
+            transform: scale(0.95);
+        }
+
+        /* ? 버튼 */
+        #help-button {
+            position: fixed;
+            top: 150px;
+            left: 30px;
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            color: #000;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-family: BookkMyungjo;
+            z-index: 15;
+        }
+
+        #help-button:hover {
+            background: #f0f0f0;
+        }
+
+        #help-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 도움말 오버레이 */
+        #help-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #help-overlay.active {
+            display: flex;
+        }
+
+        /* 공통 모달 스타일 */
+        .help-modal,
+        .info-modal {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            max-width: 900px;
+            max-height: 80vh;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 공통 닫기 버튼 스타일 */
+        .help-close-button,
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 25;
+            transition: all 0.2s;
+        }
+
+        .help-close-button:hover,
+        .close-button:hover {
+            background: #f0f0f0;
+        }
+
+        .help-close-button::before,
+        .help-close-button::after,
+        .close-button::before,
+        .close-button::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background: #000;
+        }
+
+        .help-close-button::before,
+        .close-button::before {
+            transform: rotate(45deg);
+        }
+
+        .help-close-button::after,
+        .close-button::after {
+            transform: rotate(-45deg);
+        }
+
+        /* 공통 책갈피 탭 스타일 */
+        .help-page-tabs,
+        .page-tabs {
+            display: flex;
+            border-bottom: 2px solid #000;
+            background: #fff;
+            padding: 0;
+            margin: 0;
+        }
+
+        .help-page-tab,
+        .page-tab {
+            flex: 1;
+            min-width: 80px;
+            padding: 15px 10px;
+            background: #fff;
+            border: none;
+            border-right: 2px solid #000;
+            border-bottom: 2px solid #000;
+            color: #000;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: BookkMyungjo;
+            position: relative;
+        }
+
+        .help-page-tab:last-child,
+        .page-tab:last-child {
+            border-right: none;
+        }
+
+        .help-page-tab:hover,
+        .page-tab:hover {
+            background: #f0f0f0;
+        }
+
+        .help-page-tab.active,
+        .page-tab.active {
+            background: #fff;
+            border-bottom: 2px solid #fff;
+            margin-bottom: -2px;
+        }
+
+        /* 공통 콘텐츠 영역 스타일 */
+        .help-content-wrapper,
+        .info-content-wrapper {
+            overflow-y: auto;
+            overflow-x: hidden;
+            flex: 1;
+            padding: 40px;
+            max-height: calc(80vh - 120px);
+        }
+
+        /* 공통 스크롤바 스타일링 */
+        .help-content-wrapper::-webkit-scrollbar,
+        .info-content-wrapper::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .help-content-wrapper::-webkit-scrollbar-track,
+        .info-content-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-left: 2px solid #000;
+        }
+
+        .help-content-wrapper::-webkit-scrollbar-thumb,
+        .info-content-wrapper::-webkit-scrollbar-thumb {
+            background: #000;
+            border: 1px solid #000;
+        }
+
+        .help-content-wrapper::-webkit-scrollbar-thumb:hover,
+        .info-content-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #333;
+        }
+
+        /* 공통 콘텐츠 스타일 */
+        .help-content,
+        .info-content {
+            display: none;
+        }
+
+        .help-content.active,
+        .info-content.active {
+            display: block;
+        }
+
+        .help-content h2,
+        .info-content h2 {
+            color: #000;
+            font-size: 42px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 15px;
+        }
+
+        .help-content p,
+        .info-content p {
+            color: #000;
+            font-size: 20px;
+            line-height: 2;
+            margin-bottom: 30px;
+        }
+
+        .help-images,
+        .info-images {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .help-image,
+        .info-image {
+            border: 2px solid #000;
+            border-radius: 0;
+            overflow: hidden;
+            width: auto;
+            max-width: calc(48% - 10px);
+            display: inline-block;
+        }
+
+        .help-image img,
+        .info-image img {
+            width: auto;
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        /* 작은 이미지 스타일 */
+        .help-image.small-image,
+        .info-image.small-image {
+            max-width: calc(30% - 10px);
+        }
+
+        /* 지도 오버레이 */
+        #map-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 25;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #map-overlay.active {
+            display: flex;
+        }
+
+        .map-container {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+            width: auto;
+            height: auto;
+        }
+
+        .map-close-button {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 26;
+            transition: all 0.2s;
+        }
+
+        .map-close-button:hover {
+            background: #f0f0f0;
+        }
+
+        .map-close-button::before,
+        .map-close-button::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 2px;
+            background: #000;
+        }
+
+        .map-close-button::before {
+            transform: rotate(45deg);
+        }
+
+        .map-close-button::after {
+            transform: rotate(-45deg);
+        }
+
+        .map-image-box {
+            border: 2px solid #000;
+            border-radius: 0;
+            overflow: hidden;
+            background: transparent;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .map-image-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+
+        /* 메뉴 버튼 영역 */
+        #menu-buttons {
+            position: fixed;
+            right: 30px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 15;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .menu-button {
+            width: 60px;
+            height: 60px;
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 0;
+            color: #000;
+            font-size: 24px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-family: BookkMyungjo;
+        }
+
+        .menu-button:hover {
+            background: #f0f0f0;
+        }
+
+        .menu-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 정보 오버레이 */
+        #info-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #info-overlay.active {
+            display: flex;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- 제목 바 -->
+    <div id="title-bar">
+        <h1>변화 속 공허함의 미학: 무상 無常 과 무아 無我</h1>
+    </div>
+
+    <div id="video-container">
+        <video id="video-player" src="museum_explore.mp4" muted></video>
+    </div>
+
+    <div class="clickable-area" id="clickable-area"></div>
+
+    <!-- 맵 버튼 -->
+    <button id="map-button">map</button>
+
+    <!-- ? 버튼 -->
+    <button id="help-button">?</button>
+
+    <!-- 도움말 오버레이 -->
+    <div id="help-overlay">
+        <div class="help-modal" id="help-modal">
+            <button class="help-close-button" id="help-close-button"></button>
+            
+            <!-- 책갈피 탭 -->
+            <div class="help-page-tabs" id="help-page-tabs">
+                <button class="help-page-tab active" data-page="1">무상</button>
+                <button class="help-page-tab" data-page="2">무아</button>
+                <button class="help-page-tab" data-page="3">기획의도</button>
+            </div>
+
+            <!-- 콘텐츠 영역 -->
+            <div class="help-content-wrapper">
+                <div class="help-content active" data-page="1" id="help-content-page-1"></div>
+                <div class="help-content" data-page="2" id="help-content-page-2"></div>
+                <div class="help-content" data-page="3" id="help-content-page-3"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지도 오버레이 -->
+    <div id="map-overlay">
+        <div class="map-container">
+            <button class="map-close-button" id="map-close-button"></button>
+            <div class="map-image-box">
+                <img src="map.png" alt="Map">
+            </div>
+        </div>
+    </div>
+
+    <!-- 메뉴 버튼 -->
+    <div id="menu-buttons">
+        <button class="menu-button" data-menu="1">1</button>
+        <button class="menu-button" data-menu="2">2</button>
+        <button class="menu-button" data-menu="3">3</button>
+        <button class="menu-button" data-menu="4">4</button>
+        <button class="menu-button" data-menu="5">5</button>
+    </div>
+
+    <!-- 정보 오버레이 -->
+    <div id="info-overlay">
+        <div class="info-modal" id="info-modal">
+            <button class="close-button" id="close-button"></button>
+            
+            <!-- 책갈피 탭 -->
+            <div class="page-tabs" id="page-tabs">
+                <button class="page-tab active" data-page="1">1</button>
+                <button class="page-tab" data-page="2">2</button>
+                <button class="page-tab" data-page="3">3</button>
+                <button class="page-tab" data-page="4">4</button>
+                <button class="page-tab" data-page="5">5</button>
+            </div>
+
+            <!-- 콘텐츠 영역 -->
+            <div class="info-content-wrapper">
+                <div class="info-content active" data-page="1" id="content-page-1"></div>
+                <div class="info-content" data-page="2" id="content-page-2"></div>
+                <div class="info-content" data-page="3" id="content-page-3"></div>
+                <div class="info-content" data-page="4" id="content-page-4"></div>
+                <div class="info-content" data-page="5" id="content-page-5"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video-player');
+        let isMouseDown = false;
+        const slowSpeed = 0.3; // 느린 재생 속도 (0.5배속)
+
+        // 비디오 초기화
+        video.pause();
+        video.currentTime = 0;
+        video.preload = 'auto'; // 비디오 미리 로드
+
+        // 마우스 다운 이벤트 (느린 재생 시작)
+        document.getElementById('clickable-area').addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isMouseDown = true;
+            startSlowPlay();
+        });
+
+        // 마우스 업 이벤트 (재생 멈춤)
+        document.getElementById('clickable-area').addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            isMouseDown = false;
+            stopSlowPlay();
+        });
+
+        // 마우스가 영역을 벗어날 때도 멈춤
+        document.getElementById('clickable-area').addEventListener('mouseleave', (e) => {
+            isMouseDown = false;
+            stopSlowPlay();
+        });
+
+        // 느린 재생 시작 (playbackRate 사용 - 브라우저 최적화)
+        function startSlowPlay() {
+            if (video.paused) {
+                video.playbackRate = slowSpeed;
+                video.play().catch(e => console.log('Play error:', e));
+            } else {
+                video.playbackRate = slowSpeed;
+            }
+        }
+
+        // 재생 멈춤
+        function stopSlowPlay() {
+            video.pause();
+            video.playbackRate = 1.0; // 재생 속도 초기화
+        }
+
+        // ============================================
+        // 메뉴 콘텐츠 데이터 (여기서 쉽게 수정 가능)
+        // 각 메뉴마다 5개 페이지가 있습니다
+        // ============================================
+        const menuContent = {
+            1: {
+                pages: [
+                    {
+                        title: '<솔라리스> - 임민욱 작가',
+                        description: '▶ 전시 공간 전체를 하나의 지형으로 표현한 대형 설치작품.<br>▶ 미래의 행성의 모습과 일본 사찰의 모습을 재구성. ',
+                        images: ['solaris1-1.png', 'solaris1-2.png']
+                    },
+                    {
+                        title: '구성 방식',
+                        description: '▶봉분, 사막, 강호, 분지: 코르크, 황토 분말, 테라코타 가루<br>▶두 개의 태양, 갑오징어 뼈, 부표, 미지의 언어, 그 외의 여러 흔적 ',
+                        images: ['solaris2-1.png', 'solaris2-2.png', 'solaris3.png', 'solaris4.png', 'solaris6.png', 'solaris7.png']
+                    },
+                    {
+                        title: '지구의 모든 것은 변화한다',
+                        description: '▶지구의 다른 미래를 상상하여 현재와 완전히 다른 지구를 묘사.<br>▶사막 위의 모든 요소는 가변적. 사막 위에 피어난 문명 또한 무수한 가능성을 가지고 변화.<br>▶역사의 연속성, 시간의 흐름.',
+                        images: ['solaris8.png','solaris5.png']
+                    },
+                    {
+                        title: '무상과 연기',
+                        description: '▶모든 것은 일시적, 영원하지 않음: 무상(無常)<br>▶현재의 우리는 모든 것이 상호작용하여 만들어짐: 연기(緣起)',
+                        images: ['solaris9.png']
+                    },
+                    {
+                        title: '관객은?',
+                        description: '전시실에 들어온 관객은 낯선 곳을 탐방하는 관광객이 되어, 아주 작은 사물과 사물 간의 상호작용으로 일어날 수도 있었던 가능성을 구경한다. 그들은 작품을 감상하며 모든 것은 연결되어 있다는 연기(緣起)의 힘을 깨닫고, 동시에 이 세상에 고정적인 실체란 없으며 만물은 항상 변화한다는 것을 알게 된다.',
+                        images: ['thinking.png']
+                    }
+                ]
+            },
+            2: {
+                pages: [
+                    {
+                        title: '<혜화역 3번 출구, 오후 3시> - 이제 작가',
+                        description: '▶2004년 그려진 6점의 대형 캔버스 파노라마 풍경화 연작을 2024년 영상화. <br>▶2000년대 초반 서울의 변화하는 도시 풍경을 사실주의 기법으로 묘사<br>▶작가 주변 동료들이 작성한 과거 기억과 감정에 대한 에세이를 낭독하는 오디오와 함께 회화들을 이어붙여 편집한 영상을 재생.',
+                        images: ['station1.png']
+                    },
+                    {
+                        title: '구성 요소',
+                        description: '▶에세이의 내용: 급변하는 도시에서 살아가는 불안감, 반려견의 죽음을 통한 생의 반추, 공동체의 상실, 일상의 좌절이나 새로운 희망…<br>▶6점의 회화는 클로즈업되고, 작은 사이즈로 편집되어 에세이 낭독 박자에 맞게 연속적으로 재생. <br>▶여러 생활소음 효과음, 다양한 특수효과.',
+                        images: ['station3-1.png','station3-2.png']
+                    },
+                    {
+                        title: '무상으로 인한 괴로움',
+                        description: '▶<i>"내 안에 쌓인 시간과 지금에 속한 시간이 어긋난 탓에 평생 몸을 맡겼던…”</i><br>▶무상을 깨닫는 일은 고통. <br>▶인간은 주워담을 수 없는 과거의 실수를 후회, 혹은 다시는 오지 않을 과거의 영광을 그리워함. ',
+                        images: ['station2-1.png', 'station2-2.png','station2-3.png','station2-4.png']
+                    },
+                    {
+                        title: '우리는 인정해야만 한다',
+                        description: '▶<i>“나는 이 넓은 우주를 생을 다해 헤매 다닐 테니 먼저 도착하지 말고 기다려”</i> <br>▶모든 존재가 인연에 의해 결합된 임시적인 상태임을 인정하고, 우리의 모습은 언제든지 변할 수 있다는 것을 받아들여야 함. <br>▶영원한 것은 없으며, 변화는 자연스러운 것임을 인정하면 고통은 소멸.',
+                        images: ['station4.png']
+                    },
+                    {
+                        title: '관객은?',
+                        description: ' 관객은 의자에 앉아 약 8분가량의 영상물을 관람하며 영원을 집착하는 것에 대한 덧없음과 욕망으로 가득찬 고통, 그리고 무아의 진리에 대해 고민하는 시간을 갖는다. 개개인의 고찰 시간을 끝내고 의자에서 일어나면 자연스럽게 뒤에 설치된 조형물로 시선이 갈 것이다.',
+                        images: ['hm.png']
+                    }
+                ]
+            },
+            3: {
+                pages: [
+                    {
+                        title: '<몽그랑레시: 이상과 초상> - 이불 작가',
+                        description: '▶정체불명의 무언가가 노란색 담요를 덮어쓰고 의자에 앉아있는 조각상.<br>▶파이버 글라스 위의 에나멜 코팅, 스테인레스 스틸 바닥 패널.',
+                        images: ['ideal1-1.png', 'ideal1-2.png']
+                    },
+                    {
+                        title: '상징',
+                        description: '▶머리같기도, 다리같기도 한 조형물은 결코 구체적인 모습을 드러내지 않는 이상을 상징. <br>▶고정된 이상향이란 존재하지 않으며, 현실에선 절대로 이루어질 수 없음. <br>▶조각상의 내용물을 추리하는 과정조차 공(空)함.',
+                        images: ['ideal2.png']
+                    },
+                    {
+                        title: '"나"는 무아하다-심지어 미래의 이상조차',
+                        description: '▶우리는 무아한데, 늙지 않고 병들지 않고 죽지 않는 등의 무한성을 지향함. <br>▶이것은 헛된 이상에 희망을 품고 자신을 계속해서 고통 속으로 밀어붙이는 행위. <br>▶그러나 우리는 무상하기에 이상향에 머무르는 것은 불가능.',
+                        images: ['ideal3-1.png','ideal3-2.png']
+                    },
+                    {
+                        title: '각성을 위한 돌파구',
+                        description: '▶<i>“인간은 무아-정해진 것이 없고, 인생은 무상-변화하기 때문에 노력하고자 하는 힘이 생긴다."</i><br>▶미래는 고정되지 않았기에, 지향하는 이상향 또한 우리가 계속해서 수정해나갈 수 있기 때문에 우리는 노력할 힘이 생겨남. <br>▶<몽그랑레시: 이상과 초상>=포장지가 미개봉된 선물.',
+                        images: ['ideal4.png']
+                    },
+                    {
+                        title: '관객은?',
+                        description: '무상함의 괴로움을 직시하고 당당하게 이를 해결해나가고자 한다면, 인간은 마침내 삶을 스스로 개척해나갈 진취적인 태도를 취할 수 있게 된다는 것을 깨닫게 된다.',
+                        images: ['ohh.png']
+                    }
+                ]
+            },
+            4: {
+                pages: [
+                    {
+                        title: '<적·연(積·硏)_틈> 연작-권순익 작가',
+                        description: '▶50개 이상으로 이루어진 연작.<br>▶물감에 고운 흙을 섞어 바르고 마른 후 같은 행위를 반복적으로 수행한 후 흑연을 물감층과 또 다른 물감층의 ‘사이 공간’ 위에 문질러 올리는 작업 방식.',
+                        images: ['gap1-1.png', 'gap1-2.png']
+                    },
+                    {
+                        title: '구성요소',
+                        description: '▶직접적으로 "무아"의 개념을 작업에 사용. <br>▶캔버스와 하나가 되어 작업에 몰입하는 과정 = ‘나에 대한 집착을 멀리하고 나를 비우는 행위’ = 무아<br>▶주의집중(명상)의 형태와 닮아있음.',
+                        images: ['gap2-1.jpg', 'gap2-2.png']
+                    },
+                    {
+                        title: '괴로움에서 벗어나는 법: 명상',
+                        description: '▶ <i>“세상은 항상 있는 그대로 존재해왔는데, 자아에 집착하여 자아 중심성의 욕망으로 존재와 사물을 왜곡하기 때문에 고통이 발생한다. 몸, 감정, 마음, 정신 현상을 ‘자아’로 착각하는 것은 여섯 가지 내외입처법을 통해 일시적으로 나타나는 현상을 영원한 것으로 집착하여 일으키는 유루심 때문이다.”</i> <br>▶명상의 근원적인 목표는 무상과 무아를 직시하고 받아들여 괴로움을 해결하는 것',
+                        images: ['gap4.png']
+                    },
+                    {
+                        title: '세상을 객관적으로 바라보는 기술: 명상',
+                        description: '▶단순 반복 수행을 통해 세상을 객관적으로 바라봄.<br>▶ 깨달음을 통해 존재에 대한 집착을 내려놓게 되면 비로소 무상으로 인한 괴로움에서 벗어나 무아에 가까워짐.',
+                        images: ['gap3-1.jpg', 'gap3-2.jpg']
+                    },
+                    {
+                        title: '관객은?',
+                        description: '관객은 복도를 통과하면서 작가가 무아에 도달하기 위해 거친 수행을 보고 감응하게 될 것이다. 동시에 나 자신은 괴로움에서 벗어나 무아에 가까워지기 위해 어떤 방식의 수행을 할 수 있을지 생각해볼 시간을 가질 수 있다. 이러한 수행은 권순익 작가가 작업 방식뿐만 아니라, 단순 명상, 조깅, 뜨개질, 악기 연주 등 다양한 양상으로 나타날 수 있다는 것을 분명히 언급하도록 한다.',
+                        images: ['ahh.png']
+                    }
+                ]
+            },
+            5: {
+                pages: [
+                    {
+                        title: '<기억의 벽> -안규철 작가',
+                        description: '▶5개월 동안 진행된 관객 참여형 미술 작품. <br>▶관객은 우리가 잃어버린 것, 그리워하는 것, 부재하는 것의 이름을 메모지에 기록하여 벽에 붙임. <br>▶벽은 전시기간 동안 계속 변화하며 시 구절을 드러냄.',
+                        images: ['wall1-1.png', 'wall1-2.png']
+                    },
+                    {
+                        title: '메모지의 내용',
+                        description: '▶<i>“급식실, 부서진 레고, 예전의 나, 잘 챙겨주지 못한 강아지, 하늘나라로 올라간 딸, 반장, 초딩 친구, 아버지, 어머니, 할머니, 자유, 생명, 본성, 순수함, 꿈, 미래...”</i> <br>▶우리가 상실한 대상들의 이름을 메모지에 기록하여 벽에 붙임.',
+                        images: ['wall2-1.png', 'wall2-2.png','wall2-3.png','wall2-4.png']
+                    },
+                    {
+                        title: '놓아주기',
+                        description: '▶〈혜화역 3번 출구, 오후 3시〉 : 과거와 현재는 같을 수 없음을 인정하고 시간의 흐름을 받아들여야 괴로움에서 벗어날 수 있음. <br>▶<몽그랑레시: 이상과 초상>:이상이 실체가 없음을 인정하고 현실을 직시해야 괴로움에서 벗어날 수 있음. <br>▶우리가 상실한 모든 것에 더 이상 연연해서는 안됨. ',
+                        images: ['wall3-1.png', 'wall3-2.png']
+                    },
+                    {
+                        title: '노출치료',
+                        description: '▶해탈 과정은 외상 후 스트레스 장애(PTSD) 환자가 노출 치료를 받는 것과 비슷함.<br>▶글쓰기 행위는 대상을 객관화하고 분리하는 효과가 있음. <br>▶글을 쓰는 행위를 통해 자신의 상실을 인정하고 객관적으로 보게 됨으로써 무아와 가까워짐.',
+                        images: ['wall4-1.png', 'wall4-2.png']
+                    },
+                    {
+                        title: '관객은?',
+                        description: ' 관객은 그동안 다양한 현대 미술 작품을 거쳐오며 무상과 무아의 개념을 이해하고, 어떻게 괴로움에서 벗어날 수 있는지를 점진적으로 고찰했다. 앞서 본 <솔라리스>에서는 지구 상의 모든 것은 무상하며 서로 연결되어 있다는 것을 인식한다. <혜화역 3번출구, 오후 3시>에서는 과거의 집착을, <몽그랑레시: 이상과 초상>에서는 미래의 헛된 이상에 대한 집착을 경계한다. 이어 <적·연(積·硏)_틈>에서는 집착을 버리고 무아에 다가가기 위한 구체적인 수행 과정을 체득한 관객은 <기억의 벽>에서 자신이 집착하던 대상을 글로써 기록하고 씻어내림으로써 무아에 다가간다. ',
+                        images: ['cool.png']
+                    }
+                ]
+            }
+        };
+
+        let currentMenu = 1;
+        let currentPage = 1;
+
+        // 메뉴 버튼 클릭 이벤트
+        document.querySelectorAll('.menu-button').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const menuNum = parseInt(button.getAttribute('data-menu'));
+                showMenuOverlay(menuNum);
+            });
+        });
+
+        // 페이지 탭 클릭 이벤트
+        document.querySelectorAll('.page-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const pageNum = parseInt(tab.getAttribute('data-page'));
+                switchPage(pageNum);
+            });
+        });
+
+        // 오버레이 표시
+        function showMenuOverlay(menuNum) {
+            currentMenu = menuNum;
+            currentPage = 1;
+            const menu = menuContent[menuNum];
+            if (!menu) return;
+
+            // 모든 페이지 콘텐츠 로드
+            menu.pages.forEach((pageData, index) => {
+                const pageNum = index + 1;
+                loadPageContent(pageNum, pageData);
+            });
+
+            // 첫 번째 페이지로 전환
+            switchPage(1);
+            
+            // 오버레이 표시
+            document.getElementById('info-overlay').classList.add('active');
+        }
+
+        // 페이지 콘텐츠 로드
+        function loadPageContent(pageNum, pageData) {
+            const contentDiv = document.getElementById(`content-page-${pageNum}`);
+            if (!contentDiv) return;
+
+            let html = `<h2>${pageData.title}</h2>`;
+            html += `<p>${pageData.description}</p>`;
+            
+            if (pageData.images && pageData.images.length > 0) {
+                html += '<div class="info-images">';
+                pageData.images.forEach(img => {
+                    // 문자열이면 그대로 사용, 객체면 src 속성 사용
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    const imgAlt = typeof img === 'string' ? '' : (img.alt || '');
+                    // 작은 이미지 파일명 체크
+                    const smallImages = ['thinking.png', 'hm.png', 'ohh.png', 'ahh.png', 'cool.png'];
+                    const isSmall = smallImages.some(smallImg => imgSrc.includes(smallImg));
+                    const smallClass = isSmall ? ' small-image' : '';
+                    html += `<div class="info-image${smallClass}"><img src="${imgSrc}" alt="${imgAlt}"></div>`;
+                });
+                html += '</div>';
+            }
+            
+            contentDiv.innerHTML = html;
+        }
+
+        // 페이지 전환
+        function switchPage(pageNum) {
+            currentPage = pageNum;
+
+            // 탭 활성화
+            document.querySelectorAll('.page-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.page-tab[data-page="${pageNum}"]`).classList.add('active');
+
+            // 콘텐츠 표시
+            document.querySelectorAll('.info-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`content-page-${pageNum}`).classList.add('active');
+        }
+
+        // 오버레이 닫기
+        function closeMenuOverlay() {
+            document.getElementById('info-overlay').classList.remove('active');
+        }
+
+        // X 버튼 클릭
+        document.getElementById('close-button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeMenuOverlay();
+        });
+
+        // 오버레이 배경 클릭 시 닫기
+        document.getElementById('info-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'info-overlay') {
+                closeMenuOverlay();
+            }
+        });
+
+        // 지도 버튼 클릭 이벤트
+        document.getElementById('map-button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('map-overlay').classList.add('active');
+        });
+
+        // 지도 닫기 버튼
+        document.getElementById('map-close-button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.getElementById('map-overlay').classList.remove('active');
+        });
+
+        // 지도 오버레이 배경 클릭 시 닫기
+        document.getElementById('map-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'map-overlay') {
+                document.getElementById('map-overlay').classList.remove('active');
+            }
+        });
+
+        // ============================================
+        // 도움말 콘텐츠 데이터
+        // ============================================
+        const helpContent = {
+            pages: [
+                {
+                    title: '무상과 무아?',
+                    description: '무상無常: 영구적이거나 불변하는 것의 존재를 부정한다는 사상<br>무아無我: 고정적인 실체로서의 자아가 존재하지 않는다 보는 사상<br> 이 두 개념은 모든 존재가 연기(緣起, 인과 관계)라는 방식으로 존재하기 때문에 나온 사상. <br><br> 무상과 무아를 통해 우리는 고정된 실체로서 존재하지 않으며, 끊임없이 변화하면서 살아간다는 것을 깨달음.',
+                    images: ['musangmua.png']
+                },
+                {
+                    title: '기획의도',
+                    description: '현대의 작가들이 무상과 무아를 어떻게 받아들이고 있는가? 이 두 개념이 자연스럽게 녹아져 있는 작품을 선별, 작가의 의도와 사고의 흐름을 자연스럽게 따라가며 관객의 방식대로 작품을 향유할 수 있도록 전시회를 디자인. <br><br> 매우 빠르게 변화하는 현대 사회에서 살아가는 현대인들의 고통의 원인이 무엇인지를 파악하고, 삶의 의미를 성찰하도록 도움.',
+                    images: []
+                },
+                {           
+                    title: '전시계획',
+                    description: '대상 시기: 2000년대 현대미술 작품<br>내용: ‘무상’과 ‘무아’의 개념과 일맥상통하는 제작 의도를 담은 현대미술 작품들<br>작품: <몽그랑레시: 이상과 초상> (이불 작가, 2005), <혜화역 3번출구> (이제 작가, 2004/2024), <적·연(積·硏)_틈> (권순익 작가, 2024), <솔라리스> (임민욱 작가, 2025), <기억의 벽> (안규철 작가, 2015)<br>전시기법: 회화, 설치미술, 참여미술',
+                    images: []
+                }
+            ]
+        };
+
+        let currentHelpPage = 1;
+
+        // ? 버튼 클릭 이벤트
+        document.getElementById('help-button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            showHelpOverlay();
+        });
+
+        // 도움말 페이지 탭 클릭 이벤트
+        document.querySelectorAll('.help-page-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const pageNum = parseInt(tab.getAttribute('data-page'));
+                switchHelpPage(pageNum);
+            });
+        });
+
+        // 도움말 오버레이 표시
+        function showHelpOverlay() {
+            currentHelpPage = 1;
+            
+            // 모든 페이지 콘텐츠 로드
+            helpContent.pages.forEach((pageData, index) => {
+                const pageNum = index + 1;
+                loadHelpPageContent(pageNum, pageData);
+            });
+
+            // 첫 번째 페이지로 전환
+            switchHelpPage(1);
+            
+            // 오버레이 표시
+            document.getElementById('help-overlay').classList.add('active');
+        }
+
+        // 도움말 페이지 콘텐츠 로드
+        function loadHelpPageContent(pageNum, pageData) {
+            const contentDiv = document.getElementById(`help-content-page-${pageNum}`);
+            if (!contentDiv) return;
+
+            let html = `<h2>${pageData.title}</h2>`;
+            html += `<p>${pageData.description}</p>`;
+            
+            if (pageData.images && pageData.images.length > 0) {
+                html += '<div class="help-images">';
+                pageData.images.forEach(img => {
+                    // 문자열이면 그대로 사용, 객체면 src 속성 사용
+                    const imgSrc = typeof img === 'string' ? img : img.src;
+                    const imgAlt = typeof img === 'string' ? '' : (img.alt || '');
+                    // 작은 이미지 파일명 체크
+                    const smallImages = ['thinking.png', 'hm.png', 'ohh.png', 'ahh.png', 'cool.png'];
+                    const isSmall = smallImages.some(smallImg => imgSrc.includes(smallImg));
+                    const smallClass = isSmall ? ' small-image' : '';
+                    html += `<div class="help-image${smallClass}"><img src="${imgSrc}" alt="${imgAlt}"></div>`;
+                });
+                html += '</div>';
+            }
+            
+            contentDiv.innerHTML = html;
+        }
+
+        // 도움말 페이지 전환
+        function switchHelpPage(pageNum) {
+            currentHelpPage = pageNum;
+
+            // 탭 활성화
+            document.querySelectorAll('.help-page-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.help-page-tab[data-page="${pageNum}"]`).classList.add('active');
+
+            // 콘텐츠 표시
+            document.querySelectorAll('.help-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`help-content-page-${pageNum}`).classList.add('active');
+        }
+
+        // 도움말 오버레이 닫기
+        function closeHelpOverlay() {
+            document.getElementById('help-overlay').classList.remove('active');
+        }
+
+        // 도움말 X 버튼 클릭
+        document.getElementById('help-close-button').addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeHelpOverlay();
+        });
+
+        // 도움말 오버레이 배경 클릭 시 닫기
+        document.getElementById('help-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'help-overlay') {
+                closeHelpOverlay();
+            }
+        });
+    </script>
+</body>
+</html>
+
